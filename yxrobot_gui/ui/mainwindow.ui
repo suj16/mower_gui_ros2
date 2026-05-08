@@ -135,6 +135,9 @@
           <property name="text">
            <string>map</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
          <widget class="QCheckBox" name="robot_checkbox">
           <property name="geometry">
@@ -147,6 +150,9 @@
           </property>
           <property name="text">
            <string>robot</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </widget>
