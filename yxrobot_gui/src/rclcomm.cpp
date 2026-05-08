@@ -92,8 +92,8 @@ void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     std::cout<<"收到订阅全局地图数据"<<std::endl;
     int width = msg->info.width;
     int height = msg->info.height;
-    double origin_x = msg->info.origin.position.x;
-    double origin_y = msg->info.origin.position.y;
+    originX_ = msg->info.origin.position.x;
+    originY_ = msg->info.origin.position.y;
     resolution_ = msg->info.resolution;
 
     QImage map_image(width,height,QImage::Format_RGB32);
@@ -111,11 +111,14 @@ void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
         map_image.setPixel(x,y,qRgb(color.red(),color.green(),color.blue()));
     }
 
+    //延y翻转地图 因为解析到的栅格地图的坐标系原点为左下角
+    //但是图元坐标系为左上角度
     map_image=rotateMapWithY(map_image);
     emit emitUpdateMap(map_image);
 
-    double trans_origin_x = origin_x;
-    double trans_origin_y = origin_y + height*resolution_;
+    //计算图元坐标系原点在世界坐标系下的坐标（反转后的栅格地图坐标原点在世界坐标系下的坐标）
+    double trans_origin_x = originX_;
+    double trans_origin_y = originY_ + height*resolution_;
     worldOrigin_.setX(-trans_origin_x/resolution_);
     worldOrigin_.setY(trans_origin_y/resolution_);
 
@@ -185,7 +188,8 @@ void rclcomm::localCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr
 
 void rclcomm::getRobotPose()
 {
-    auto pose = getTransform("map","base_link");
+    auto pose = getTransform("base_link","map");
+    std::cout<<"getPose:"<<pose.x<<","<<pose.y<<std::endl;
     emit emitUpdateRobotPose(pose);
 }
 
@@ -216,8 +220,8 @@ RobotPose rclcomm::getTransform(const std::string& from,const std::string& to)
         if(!tf_buffer_->canTransform(to,from,tf2::TimePointZero,std::chrono::milliseconds(100)))
             return pose;
 
-        geometry_msgs::msg::TransformStamped transform
-            = tf_buffer_->lookupTransform(to,from, tf2::TimePointZero, std::chrono::milliseconds(100));
+        geometry_msgs::msg::TransformStamped transform =
+            tf_buffer_->lookupTransform(to, from, tf2::TimePointZero, std::chrono::milliseconds(100));
         geometry_msgs::msg::Quaternion msg_quat = transform.transform.rotation;
         // 转换类型
         tf2::Quaternion q;
@@ -228,9 +232,9 @@ RobotPose rclcomm::getTransform(const std::string& from,const std::string& to)
         // x y
         double x = transform.transform.translation.x;
         double y = transform.transform.translation.y;
-        QPointF trans_pose = transWorldPoint2Scene(QPointF(x,y));
-        pose.x = trans_pose.x();
-        pose.y = trans_pose.y();
+        auto transPose = transWorldPoint2Scene(QPointF(x,y));
+        pose.x = transPose.x();
+        pose.y = transPose.y();
         pose.theta = yaw;
     }
     catch (tf2::TransformException &ex) {

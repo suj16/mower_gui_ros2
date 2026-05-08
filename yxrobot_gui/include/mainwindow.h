@@ -22,6 +22,12 @@ public:
 private slots:
     void updateRobotPose(RobotPose pose);
 
+    void on_pushButton_clicked();
+
+    void on_map_checkbox_stateChanged(int arg1);
+
+    void on_robot_checkbox_stateChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<rclcomm> rclcomm_;

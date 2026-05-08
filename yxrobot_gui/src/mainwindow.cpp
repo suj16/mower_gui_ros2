@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::updateRobotPose(RobotPose pose)
 {
+    // std::cout<<"getPose:"<<pose.x<<","<<pose.y<<std::endl;
     robotItem_->updateRobotPose(pose);//RobotPose全局更新
     QPointF pos;
     pos.setX(pose.x);
@@ -43,5 +44,31 @@ void MainWindow::updateRobotPose(RobotPose pose)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    robotPoseItem_->hide();
+}
+
+
+void MainWindow::on_map_checkbox_stateChanged(int arg1)
+{
+    if(arg1 == Qt::Unchecked)
+    {
+        robotItem_->hide();
+    }
+    else robotItem_->show();
+}
+
+
+void MainWindow::on_robot_checkbox_stateChanged(int arg1)
+{
+    if(arg1 == Qt::Unchecked)
+    {
+        robotPoseItem_->hide();
+    }
+    else robotPoseItem_->show();
 }
 

@@ -61,6 +61,8 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
     RobotPose currPose_;
+    double originX_;
+    double originY_;
     double resolution_;
     QPointF worldOrigin_;
 };

@@ -31,5 +31,4 @@ void displayRobotPose::updatePose(RobotPose pose)
 {
     currRobotPose_ = pose;
     update();
-    std::cout<<"更新位姿("<<currRobotPose_.x<<","<<currRobotPose_.y<<")"<<std::endl;
 }
