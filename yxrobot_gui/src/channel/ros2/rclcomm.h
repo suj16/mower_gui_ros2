@@ -13,7 +13,7 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2/LinearMath/Quaternion.h"
 
-#include "common.h"
+#include "common/common.h"
 
 
 class rclcomm:public QObject
@@ -40,8 +40,8 @@ private:
     RobotPose getTransform(const std::string& from,const std::string& to);
 
 signals:
-    void emitUpdateMap(QImage img);
-    void emitUpdateGlobalCostMap(QImage img);
+    void emitUpdateMap(const OccupancyMap& map);
+    void emitUpdateGlobalCostMap(const OccupancyMap& map);
     void emitUpdateRobotPose(RobotPose pose);
 
 private:
@@ -65,6 +65,8 @@ private:
     double originY_;
     double resolution_;
     QPointF worldOrigin_;
+    OccupancyMap m_globalMap;
+    OccupancyMap m_globalCostMap;
 };
 
 #endif // RCLCOMM_H

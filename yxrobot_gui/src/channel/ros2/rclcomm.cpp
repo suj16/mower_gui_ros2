@@ -96,78 +96,33 @@ void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     originY_ = msg->info.origin.position.y;
     resolution_ = msg->info.resolution;
 
-    QImage map_image(width,height,QImage::Format_RGB32);
+    OccupancyMap map_data(height,width,resolution_,Eigen::Vector3d(originX_,originY_,0));
     for(size_t i=0;i<msg->data.size();i++){
-        int x= i%width;
-        int y = int(i/width);
-        QColor color;
-        if(msg->data[i]==100){
-            color = Qt::black;
-        }else if(msg->data[i]==0){
-            color = Qt::white;
-        }else{
-            color = Qt::gray;
-        }
-        map_image.setPixel(x,y,qRgb(color.red(),color.green(),color.blue()));
+        int x= int(i/width);
+        int y = i%width;
+        map_data(x,y) = msg->data[i];
     }
+    map_data.SetFlip();
+    m_globalMap=std::move(map_data);
 
-    //延y翻转地图 因为解析到的栅格地图的坐标系原点为左下角
-    //但是图元坐标系为左上角度
-    map_image=rotateMapWithY(map_image);
-    emit emitUpdateMap(map_image);
-
-    //计算图元坐标系原点在世界坐标系下的坐标（反转后的栅格地图坐标原点在世界坐标系下的坐标）
-    double trans_origin_x = originX_;
-    double trans_origin_y = originY_ + height*resolution_;
-    worldOrigin_.setX(-trans_origin_x/resolution_);
-    worldOrigin_.setY(trans_origin_y/resolution_);
-
+    emit emitUpdateMap(m_globalMap);
 }
 
 void rclcomm::globalCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
     int width = msg->info.width;
     int height = msg->info.height;
-    QImage map_image(width, height, QImage::Format_ARGB32);
-    for (size_t i = 0; i < msg->data.size(); i++) {
-        int x = i % width;
-        int y = (int)i / width;
-        QColor color;
-        int data = msg->data[i];
-        if (data >= 100) {
-            color.setRgb(0xff, 0x00, 0xff);
-            color.setAlpha(50);
-        } else if (data >= 90 && data < 100) {
-            color.setRgb(0x66, 0xff, 0xff);
-            color.setAlpha(50);
-        } else if (data >= 70 && data <= 90) {
-            color.setRgb(0xff, 0x00, 0x33);
-            color.setAlpha(50);
-        } else if (data >= 60 && data <= 70) {
-            color.setRgb(0xbe, 0x28, 0x1a);
-            color.setAlpha(50);
-        } else if (data >= 50 && data < 60) {
-            color.setRgb(0xBE, 0x1F, 0x58);
-            color.setAlpha(50);
-        } else if (data >= 40 && data < 50) {
-            color.setRgb(0xBE, 0x25, 0x76);
-            color.setAlpha(50);
-        } else if (data >= 30 && data < 40) {
-            color.setRgb(0xBE, 0x2A, 0x99);
-            color.setAlpha(50);
-        } else if (data >= 20 && data < 30) {
-            color.setRgb(0xBE, 0x35, 0xB3);
-            color.setAlpha(50);
-        } else if (data >= 10 && data < 20) {
-            color.setRgb(0xB0, 0x3C, 0xbE);
-            color.setAlpha(50);
-        } else {
-            color = Qt::transparent;
-        }
-        map_image.setPixelColor(x, y, color);
+    double origin_x = msg->info.origin.position.x;
+    double origin_y = msg->info.origin.position.y;
+    OccupancyMap cost_map(height, width,msg->info.resolution,Eigen::Vector3d(origin_x, origin_y, 0));
+    for (int i = 0; i < msg->data.size(); i++) {
+        int x = int(i / width);
+        int y = i % width;
+        cost_map(x, y) = msg->data[i];
     }
-    map_image = rotateMapWithY(map_image);
-    emit emitUpdateGlobalCostMap(map_image);
+    cost_map.SetFlip();
+    m_globalCostMap=std::move(cost_map);
+    emit emitUpdateGlobalCostMap(m_globalCostMap);
 }
 
 void rclcomm::localCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -183,13 +138,12 @@ void rclcomm::localCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr
     mat.getEulerYPR(yaw,pitch,roll);
     double origin_theta = yaw;
     QImage map_image(width, height, QImage::Format_ARGB32);
-    emit emitUpdateGlobalCostMap(map_image);
+    // emit emitUpdateGlobalCostMap(map_image);
 }
 
 void rclcomm::getRobotPose()
 {
     auto pose = getTransform("base_link","map");
-    std::cout<<"getPose:"<<pose.x<<","<<pose.y<<std::endl;
     emit emitUpdateRobotPose(pose);
 }
 
@@ -229,12 +183,9 @@ RobotPose rclcomm::getTransform(const std::string& from,const std::string& to)
         tf2::Matrix3x3 mat(q);
         double roll, pitch, yaw;
         mat.getRPY(roll, pitch, yaw);
-        // x y
-        double x = transform.transform.translation.x;
-        double y = transform.transform.translation.y;
-        auto transPose = transWorldPoint2Scene(QPointF(x,y));
-        pose.x = transPose.x();
-        pose.y = transPose.y();
+
+        pose.x = transform.transform.translation.x;
+        pose.y = transform.transform.translation.y;
         pose.theta = yaw;
     }
     catch (tf2::TransformException &ex) {
