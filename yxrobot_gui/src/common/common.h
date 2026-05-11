@@ -35,12 +35,16 @@ public:
     void SetFlip(){
         m_map_data = flip();
     }
+    bool isNULL() const
+    {
+        return (m_rows == 0 && m_cols == 0);
+    }
 
-    int Rows() { return m_rows; }
-    int Cols() { return m_cols; }
+    int Rows() const { return m_rows; }
+    int Cols()  const { return m_cols; }
     //宽高地图坐标系下的长度
-    int width() { return m_cols; }
-    int height() { return m_rows; }
+    int width()  const { return m_cols; }
+    int height()  const { return m_rows; }
 
     //以x轴作为对称轴翻转
     Eigen::MatrixXi flip() { return m_map_data.colwise().reverse(); }
@@ -78,8 +82,8 @@ public:
    * @description: 获取带rgba颜色值的代价地图
    * @return {*}
    */
-    Eigen::Matrix<Eigen::Vector4i, Eigen::Dynamic, Eigen::Dynamic>
-    GetCostMapData() {
+    Eigen::Matrix<Eigen::Vector4i, Eigen::Dynamic, Eigen::Dynamic> GetCostMapData()
+    {
         Eigen::Matrix<Eigen::Vector4i, Eigen::Dynamic, Eigen::Dynamic> res =
             Eigen::Matrix<Eigen::Vector4i, Eigen::Dynamic, Eigen::Dynamic>(
                 m_map_data.rows(), m_map_data.cols());
