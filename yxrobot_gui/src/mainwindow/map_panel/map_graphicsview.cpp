@@ -16,8 +16,11 @@ MapGraphicsView::MapGraphicsView(QWidget* parent) :
     m_globalCostMapItem = new CostMapItem("map.globalCostMap", "globalCostMap", 10);
     m_qGraphicScene->addItem(m_globalCostMapItem);
 
-    m_robotPoseItem = new RobotPoseItem("localization.robot", "robot", 5);
+    m_robotPoseItem = new RobotPoseItem("localization.robot", "robot", 15);
     m_qGraphicScene->addItem(m_robotPoseItem);
+
+    m_laserScanItem = new LaserItem("scan.laser","laser",20);
+    m_qGraphicScene->addItem(m_laserScanItem);
 
 
     this->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
@@ -33,6 +36,7 @@ MapGraphicsView::MapGraphicsView(QWidget* parent) :
     connect(rclcomm_.get(),&rclcomm::emitUpdateMap,this,&MapGraphicsView::updateMap);
     connect(rclcomm_.get(),&rclcomm::emitUpdateGlobalCostMap,m_globalCostMapItem,&CostMapItem::updateMap);
     connect(rclcomm_.get(),&rclcomm::emitUpdateRobotPose,m_robotPoseItem,&RobotPoseItem::updatePose);
+    connect(rclcomm_.get(),&rclcomm::emitUpdateLaserScan,m_laserScanItem,&LaserItem::UpdateLaserData);
 }
 
 void MapGraphicsView::updateMap(const OccupancyMap& map)

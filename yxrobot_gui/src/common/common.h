@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <math.h>
 #include <Eigen/Dense>
+#include "point.h"
+
+typedef point<double> Point;
 
 struct RobotPose {
     double x{0};
@@ -45,6 +48,7 @@ public:
     //宽高地图坐标系下的长度
     int width()  const { return m_cols; }
     int height()  const { return m_rows; }
+    double getRes() const {return m_resolution;}
 
     //以x轴作为对称轴翻转
     Eigen::MatrixXi flip() { return m_map_data.colwise().reverse(); }
@@ -128,6 +132,16 @@ public:
         }
         return res;
     }
+};
+
+struct LaserScan {
+    LaserScan() = default;
+    LaserScan(int i, std::vector<Point> d) : id(i), data(d) {}
+    void reserve(uint32_t length){data.reserve(length);}
+    int id;                   // 激光ID
+    std::vector<Point> data;  // 点坐标
+    void push_back(Point p) { data.push_back(p); }
+    void clear() { data.clear(); }
 };
 
 //角度转弧度

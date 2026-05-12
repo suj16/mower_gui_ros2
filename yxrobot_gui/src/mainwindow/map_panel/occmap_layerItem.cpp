@@ -9,7 +9,6 @@ OccMapItem::OccMapItem(const QString& id,const QString& name,const int& z,QGraph
 
 void OccMapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    painter->setRenderHint(QPainter::Antialiasing,true);
     painter->drawImage(0,0,m_map_image);
 }
 
@@ -21,6 +20,7 @@ QRectF OccMapItem::boundingRect() const
 void OccMapItem::updateMap(const OccupancyMap& map)
 {
     m_map = map;
+    prepareGeometryChange();
     m_map_image = QImage(m_map.Cols(), m_map.Rows(), QImage::Format_ARGB32);
     for (int i = 0; i < m_map.Cols(); i++) {
         for (int j = 0; j < m_map.Rows(); j++) {

@@ -11,7 +11,6 @@ CostMapItem::CostMapItem(const QString& id,
 
 void CostMapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    painter->setRenderHint(QPainter::Antialiasing,true);
     painter->drawImage(0,0,m_map_image);
 }
 
@@ -25,6 +24,8 @@ void CostMapItem::updateMap(const OccupancyMap& map)
     m_map = map;
     Eigen::Matrix<Eigen::Vector4i, Eigen::Dynamic, Eigen::Dynamic> cost_map =
         m_map.GetCostMapData();
+
+    prepareGeometryChange();
     m_map_image = QImage(m_map.Cols(), m_map.Rows(),
                         QImage::Format_ARGB32);
     // map_image_.save("./test.png");

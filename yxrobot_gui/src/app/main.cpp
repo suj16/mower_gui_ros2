@@ -7,6 +7,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     qRegisterMetaType<RobotPose>("RobotPose");
     qRegisterMetaType<OccupancyMap>("OccupancyMap");
+    qRegisterMetaType<LaserScan>("LaserScan");
     MainWindow w;
     w.show();
     return a.exec();

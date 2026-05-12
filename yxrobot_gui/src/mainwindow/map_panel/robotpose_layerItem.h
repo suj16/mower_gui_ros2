@@ -26,6 +26,10 @@ private:
     QPixmap m_robotImg;
     RobotPose m_currRobotPose;
     OccupancyMap m_map;
+
+    double m_robotActualWidth_m = 1.0;  // 机器人实际宽度（米），例如 0.5m
+    double m_robotActualHeight_m = 1.0; // 机器人实际长度（米），例如 0.5m
+    QPixmap m_originalImg; // 缓存原始图片，防止多次缩放导致失真
 };
 
 #endif // ROBOTPOSE_LAYERITEM_H

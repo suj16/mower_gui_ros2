@@ -4,8 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsItem>
 #include "channel/ros2/rclcomm.h"
-#include "mainwindow/map_panel/occmap_layerItem.h"
-#include "mainwindow/map_panel/robotpose_layerItem.h"
+#include "common/common.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

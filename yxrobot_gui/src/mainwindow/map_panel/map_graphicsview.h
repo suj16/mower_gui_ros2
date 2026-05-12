@@ -4,6 +4,7 @@
 #include "mainwindow/map_panel/occmap_layerItem.h"
 #include "mainwindow/map_panel/costmap_layerItem.h"
 #include "mainwindow/map_panel/robotpose_layerItem.h"
+#include "mainwindow/map_panel/laser_layeritem.h"
 #include "channel/ros2/rclcomm.h"
 
 #include <QMouseEvent>
@@ -36,6 +37,7 @@ private:
     OccMapItem* m_occMapItem;
     CostMapItem* m_globalCostMapItem;
     RobotPoseItem* m_robotPoseItem;
+    LaserItem* m_laserScanItem;
 
     QPoint m_lastMousePos;  // 记录上一次鼠标的位置
     bool m_isDragging = false; // 是否正在拖拽的标志位

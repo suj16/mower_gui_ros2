@@ -40,6 +40,12 @@ bool rclcomm::Start()
         std::bind(&rclcomm::globalCostMapCallback,this,std::placeholders::_1),
         sub1_obt);
 
+    laserScan_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
+        "scan",
+        20,
+        std::bind(&rclcomm::laserScanCallback,this,std::placeholders::_1),
+        sub_laser_obt);
+
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock(), std::chrono::seconds(10));
     transform_listener_ =
         std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -92,11 +98,11 @@ void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     std::cout<<"收到订阅全局地图数据"<<std::endl;
     int width = msg->info.width;
     int height = msg->info.height;
-    originX_ = msg->info.origin.position.x;
-    originY_ = msg->info.origin.position.y;
-    resolution_ = msg->info.resolution;
+    double originX = msg->info.origin.position.x;
+    double originY = msg->info.origin.position.y;
+    double resolution = msg->info.resolution;
 
-    OccupancyMap map_data(height,width,resolution_,Eigen::Vector3d(originX_,originY_,0));
+    OccupancyMap map_data(height,width,resolution,Eigen::Vector3d(originX,originY,0));
     for(size_t i=0;i<msg->data.size();i++){
         int x= int(i/width);
         int y = i%width;
@@ -137,8 +143,40 @@ void rclcomm::localCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr
     double roll,pitch,yaw;
     mat.getEulerYPR(yaw,pitch,roll);
     double origin_theta = yaw;
-    QImage map_image(width, height, QImage::Format_ARGB32);
+    // QImage map_image(width, height, QImage::Format_ARGB32);
     // emit emitUpdateGlobalCostMap(map_image);
+}
+
+void rclcomm::laserScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
+{
+    double angle_min = msg->angle_min;
+    double angle_max = msg->angle_max;
+    double angle_increment = msg->angle_increment;
+
+    try {
+        geometry_msgs::msg::TransformStamped transform =
+            tf_buffer_->lookupTransform("base_scan", "map", tf2::TimePointZero, std::chrono::milliseconds(100));
+        tf2::Transform tf2_transform;
+        tf2::fromMsg(transform.transform, tf2_transform);
+        LaserScan laser_points;
+        laser_points.reserve(msg->ranges.size());
+        for(int i = 0; i < msg->ranges.size(); i++)
+        {
+            double angle = msg->angle_min + i * angle_increment;
+            tf2::Vector3 point_laser(msg->ranges[i] * cos(angle), msg->ranges[i] * sin(angle), 0.0);
+            tf2::Vector3 point_base = tf2_transform * point_laser;
+            Point p;
+            p.x = point_base.x();
+            p.y = point_base.y();
+            laser_points.push_back(p);
+        }
+        laser_points.id = 0;
+        emit emitUpdateLaserScan(laser_points);
+    }
+    catch (tf2::TransformException &ex)
+    {
+
+    }
 }
 
 void rclcomm::getRobotPose()
@@ -147,25 +185,6 @@ void rclcomm::getRobotPose()
     emit emitUpdateRobotPose(pose);
 }
 
-QImage rclcomm::rotateMapWithY(QImage map)
-{
-    QImage res=map;
-    for(int x=0;x<map.width();x++){
-        for(int y=0;y<map.height();y++)
-        {
-            res.setPixelColor(x,map.height()-y-1,map.pixelColor(x,y));
-        }
-    }
-    return res;
-}
-
-QPointF rclcomm::transWorldPoint2Scene(QPointF point)
-{
-    QPointF ret;
-    ret.setX(worldOrigin_.x() + point.x()/resolution_);
-    ret.setY(worldOrigin_.y() - point.y()/resolution_);
-    return ret;
-}
 
 RobotPose rclcomm::getTransform(const std::string& from,const std::string& to)
 {

@@ -9,15 +9,19 @@ RobotPoseItem::RobotPoseItem(const QString& id,const QString& name,const int& z,
     setAcceptDrops(true);
     setFlag(ItemAcceptsInputMethod, true);
     moveBy(0, 0);
-    m_robotImg.load(":/sweeper.png");
+
+    //加载图片
+    m_originalImg.load(":/sweeper.png");
     QMatrix matrix;
     matrix.rotate(90);
-    m_robotImg = m_robotImg.transformed(matrix, Qt::SmoothTransformation);
-    m_robotImg = m_robotImg.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    m_originalImg = m_originalImg.transformed(matrix, Qt::SmoothTransformation);
+    m_robotImg = m_originalImg;
 }
 
 QRectF RobotPoseItem::boundingRect() const {
-    return QRectF(0, 0, m_robotImg.width(), m_robotImg.height());
+    qreal w = m_robotImg.width();
+    qreal h = m_robotImg.height();
+    return QRectF(-w / 2.0, -h / 2.0, w, h);
 }
 
 void RobotPoseItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
@@ -33,6 +37,23 @@ void RobotPoseItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 void RobotPoseItem::updateMap(const OccupancyMap& map)
 {
     m_map = map;
+
+    // 获取地图分辨率 (假设方法名为 resolution() 或 getResolution()，单位 m/pixel)
+    double res = m_map.getRes();
+
+    if (res > 0.0) {
+        // 将 米 转换为 像素
+        int pixelWidth = static_cast<int>(m_robotActualWidth_m / res);
+        int pixelHeight = static_cast<int>(m_robotActualHeight_m / res);
+
+        // 关键：通知QGraphicsScene当前Item的边界发生了变化，需要重绘
+        prepareGeometryChange();
+
+        // 使用原图进行缩放，保证清晰度
+        m_robotImg = m_originalImg.scaled(pixelWidth, pixelHeight,
+                                          Qt::IgnoreAspectRatio,
+                                          Qt::SmoothTransformation);
+    }
 }
 
 void RobotPoseItem::updatePose(RobotPose pose)
