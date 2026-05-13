@@ -10,6 +10,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QScrollBar>
+#include <QDebug>
 
 class MapGraphicsView: public QGraphicsView
 {

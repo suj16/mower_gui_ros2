@@ -95,7 +95,7 @@ void rclcomm::ShutDown()
 
 void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
-    std::cout<<"收到订阅全局地图数据"<<std::endl;
+    // std::cout<<"收到订阅全局地图数据"<<std::endl;
     int width = msg->info.width;
     int height = msg->info.height;
     double originX = msg->info.origin.position.x;
@@ -108,7 +108,6 @@ void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
         int y = i%width;
         map_data(x,y) = msg->data[i];
     }
-    map_data.SetFlip();
     m_globalMap=std::move(map_data);
 
     emit emitUpdateMap(m_globalMap);
@@ -126,7 +125,6 @@ void rclcomm::globalCostMapCallback(const nav_msgs::msg::OccupancyGrid::SharedPt
         int y = i % width;
         cost_map(x, y) = msg->data[i];
     }
-    cost_map.SetFlip();
     m_globalCostMap=std::move(cost_map);
     emit emitUpdateGlobalCostMap(m_globalCostMap);
 }
@@ -155,7 +153,7 @@ void rclcomm::laserScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
     try {
         geometry_msgs::msg::TransformStamped transform =
-            tf_buffer_->lookupTransform("base_scan", "map", tf2::TimePointZero, std::chrono::milliseconds(100));
+            tf_buffer_->lookupTransform("map", "base_scan", tf2::TimePointZero, std::chrono::milliseconds(100));
         tf2::Transform tf2_transform;
         tf2::fromMsg(transform.transform, tf2_transform);
         LaserScan laser_points;
@@ -165,12 +163,13 @@ void rclcomm::laserScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg
             double angle = msg->angle_min + i * angle_increment;
             tf2::Vector3 point_laser(msg->ranges[i] * cos(angle), msg->ranges[i] * sin(angle), 0.0);
             tf2::Vector3 point_base = tf2_transform * point_laser;
-            Point p;
+            Point p,trans_p;
             p.x = point_base.x();
             p.y = point_base.y();
-            laser_points.push_back(p);
+            m_globalMap.worldPose2Scene(p.x,p.y,trans_p.x,trans_p.y);
+            laser_points.push_back(trans_p);
         }
-        laser_points.id = 0;
+        laser_points.id = 1;
         emit emitUpdateLaserScan(laser_points);
     }
     catch (tf2::TransformException &ex)

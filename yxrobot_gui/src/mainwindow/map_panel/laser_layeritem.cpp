@@ -20,81 +20,106 @@ QRectF LaserItem::boundingRect() const
     return bounding_rect_;
 }
 
-void LaserItem::computeBoundRect(
-    const std::map<int, std::vector<Point>> &laser_scan) {
-    float xmax, xmin, ymax, ymin;
-    for (auto [id, points] : laser_scan) {
-        if (points.empty())
-            continue;
-        xmax = xmin = points[0].x;
-        ymax = ymin = points[0].y;
-        for (int i = 1; i < points.size(); ++i) {
-            Point p = points[i];
-            xmax = xmax > p.x ? xmax : p.x;
-            xmin = xmin < p.x ? xmin : p.x;
-            ymax = ymax > p.y ? ymax : p.y;
-            ymin = ymin < p.y ? ymin : p.y;
+void LaserItem::computeBoundRect(const std::map<int, std::vector<Point>> &laser_scan) {
+    if (laser_scan.empty()) {
+        bounding_rect_ = QRectF();
+        return;
+    }
+
+    bool first_point = true;
+    float xmax = 0, xmin = 0, ymax = 0, ymin = 0;
+
+    for (const auto& [id, points] : laser_scan) {
+        for (const auto& p : points) {
+            // 【核心修复】：如果坐标是无穷大 (inf) 或非数字 (nan)，直接跳过！
+            if (!std::isfinite(p.x) || !std::isfinite(p.y)) {
+                continue;
+            }
+
+            if (first_point) {
+                xmax = xmin = p.x;
+                ymax = ymin = p.y;
+                first_point = false;
+            } else {
+                xmax = std::max(xmax, static_cast<float>(p.x));
+                xmin = std::min(xmin, static_cast<float>(p.x));
+                ymax = std::max(ymax, static_cast<float>(p.y));
+                ymin = std::min(ymin, static_cast<float>(p.y));
+            }
         }
     }
-    // std::cout << "xmax:" << xmax << "xmin:" << xmin << "ymax:" << ymax
-    //           << "ymin:" << ymin << std::endl;
-    bounding_rect_ = QRectF(0, 0, xmax, ymax);
+
+    if (first_point) { // 防止所有的 points 数组都是空的
+        bounding_rect_ = QRectF();
+    } else {
+        // QRectF(x, y, width, height)
+        bounding_rect_ = QRectF(xmin, ymin, xmax - xmin, ymax - ymin);
+    }
 }
 
 
 void LaserItem::UpdateLaserData(const LaserScan& scan) {
-    std::cout<<"update laser!"<<std::endl;
+    // std::cout<<"update laser!"<<std::endl;
     laser_data_scene_[scan.id] = scan.data;
+    prepareGeometryChange();
     computeBoundRect(laser_data_scene_);
     update();
 }
-void LaserItem::drawLaser(QPainter *painter, int id,
-                            std::vector<Point> data) {
+
+void LaserItem::drawLaser(QPainter *painter, int id, const std::vector<Point>& data) {
+    if (data.empty()) return;
+
     QColor color;
-    if (!location_to_color_.count(id)) {
-        int r, g, b;
-        Id2Color(id, r, g, b);
-        color = QColor(r, g, b);
+    auto it = location_to_color_.find(id);
+    if (it == location_to_color_.end()) {
+        color = Id2Color(id);
+        location_to_color_[id] = color;
     } else {
-        color = location_to_color_[id];
+        color = it->second;
     }
-    painter->setPen(QPen(color));
-    for (auto one_point : data) {
-        QPointF point = QPointF(one_point.x, one_point.y);
-        // std::cout<<"point:"<<point.x() <<" "<<point.y()<<std::endl;
-        painter->drawPoint(point);
+    QPen pen(color);
+    pen.setWidth(3);        // 宽度设为 3 个像素，确保肉眼清晰可见
+    pen.setCosmetic(true);  // 无论怎么放大缩小，永远是屏幕上的 3x3 像素点
+    painter->setPen(pen);
+
+    QVector<QPointF> qpoints;
+    qpoints.reserve(data.size()); // 提前分配内存
+    for (const auto& one_point : data) {
+        qpoints.append(QPointF(one_point.x, one_point.y));
     }
-    std::cout << "paint laser" << std::endl;
-    // qDebug() << "boundRet:" << bounding_rect_ << std::endl;
+
+    painter->drawPoints(qpoints.data(), qpoints.size());
 }
-void LaserItem::Id2Color(int id, int &R, int &G, int &B) {
-#define LocationColorJudge(JudegeId, color) \
-    if (id == JudegeId) {                     \
-            R = color & 0xFF0000;                   \
-            R >>= 16;                               \
-            G = color & 0x00FF00;                   \
-            G >>= 8;                                \
-            B = color & 0x0000FF;                   \
+
+QColor LaserItem::Id2Color(int id) {
+    // 提取 RGB 颜色的小型 lambda 函数
+    auto hexToColor = [](uint32_t hex) {
+        return QColor((hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
+    };
+
+    switch (id) {
+        case 0: return hexToColor(0xFF6347);
+        case 1: return hexToColor(0xFF6600);
+        case 2: return hexToColor(0x228B22);
+        case 3: return hexToColor(0x800000);
+        case 4: return hexToColor(0x8A2BE2);
+        case 5: return hexToColor(0xF4A460);
+        case 6: return hexToColor(0xD2B48C);
+        case 7: return hexToColor(0xADFF2F);
+        case 8: return hexToColor(0xFF00FF);
+        case 9: return hexToColor(0x00FF00);
+        case -1: return hexToColor(0x40E0D0);
+        case -2: return hexToColor(0x2F4F4F);
+        case -3: return hexToColor(0x00BFFF);
+        case -4: return hexToColor(0x708090);
+        case -5: return hexToColor(0x00008B);
+        case -6: return hexToColor(0x006633);
+        case -7: return hexToColor(0x003300);
+        case -8: return hexToColor(0xDA70D6);
+        case -9: return hexToColor(0x9900cc);
+        case -20: return hexToColor(0x551A8B);
+        case 10: return hexToColor(0x00FF33);
+    default:
+        return QColor(Qt::white); // 必须有一个默认颜色兜底
     }
-    LocationColorJudge(0, 0xFF6347);
-    LocationColorJudge(1, 0xff6600);
-    LocationColorJudge(2, 0x228B22);
-    LocationColorJudge(3, 0x800000);
-    LocationColorJudge(4, 0x8A2BE2);
-    LocationColorJudge(5, 0xF4A460);
-    LocationColorJudge(6, 0xD2B48C);
-    LocationColorJudge(7, 0xADFF2F);
-    LocationColorJudge(8, 0xFF00FF);
-    LocationColorJudge(9, 0x00FF00);
-    LocationColorJudge(-1, 0x40E0D0);
-    LocationColorJudge(-2, 0x2F4F4F);
-    LocationColorJudge(-3, 0x00BFFF);
-    LocationColorJudge(-4, 0x708090);
-    LocationColorJudge(-5, 0x00008B);
-    LocationColorJudge(-6, 0x006633);
-    LocationColorJudge(-7, 0x003300);
-    LocationColorJudge(-8, 0xDA70D6);
-    LocationColorJudge(-9, 0x9900cc);
-    LocationColorJudge(-20, 0x551A8B);
-    LocationColorJudge(10, 0x00FF33);
 }

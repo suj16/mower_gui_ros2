@@ -35,9 +35,7 @@ public:
     void SetMapData(const Eigen::MatrixXi &data) {
         m_map_data = data;
     }
-    void SetFlip(){
-        m_map_data = flip();
-    }
+
     bool isNULL() const
     {
         return (m_rows == 0 && m_cols == 0);
@@ -50,11 +48,9 @@ public:
     int height()  const { return m_rows; }
     double getRes() const {return m_resolution;}
 
-    //以x轴作为对称轴翻转
-    Eigen::MatrixXi flip() { return m_map_data.colwise().reverse(); }
     /**
    * @description:
-   * 输入世界坐标,返回原始(地图图片)图元坐标。坐标已经进行了上下翻转
+   * 输入世界坐标,返回原始(地图图片)图元坐标。
    * @param {double&} world_x
    * @param {double&} world_x
    * @param {double&} scene_x
@@ -65,7 +61,7 @@ public:
                          double &scene_x,double &scene_y)
     {
         scene_x = (world_x - m_origin[0]) / m_resolution;
-        scene_y = height() - (world_y - m_origin[1]) / m_resolution;
+        scene_y = (world_y - m_origin[1]) / m_resolution;
     }
     /**
    * @description:
@@ -80,7 +76,7 @@ public:
                          double &world_x, double &world_y)
     {
         world_x = scene_x * m_resolution + m_origin[0];
-        world_y = (height() - scene_y) * m_resolution + m_origin[1];
+        world_y = scene_y * m_resolution + m_origin[1];
     }
     /**
    * @description: 获取带rgba颜色值的代价地图
@@ -138,8 +134,8 @@ struct LaserScan {
     LaserScan() = default;
     LaserScan(int i, std::vector<Point> d) : id(i), data(d) {}
     void reserve(uint32_t length){data.reserve(length);}
-    int id;                   // 激光ID
-    std::vector<Point> data;  // 点坐标
+    int id;
+    std::vector<Point> data;
     void push_back(Point p) { data.push_back(p); }
     void clear() { data.clear(); }
 };

@@ -7,6 +7,7 @@ MapGraphicsView::MapGraphicsView(QWidget* parent) :
 {
     //初始化地图场景类
     m_qGraphicScene = new QGraphicsScene();
+    this->scale(1,-1);//view沿x轴对称翻转，对其世界坐标系
     this->setScene(m_qGraphicScene);
 
     //初始化Item
@@ -132,6 +133,40 @@ void MapGraphicsView::wheelEvent(QWheelEvent *event)
             scale(1.0 / scaleFactor, 1.0 / scaleFactor);
         }
     }
+
+    QRect viewportRect = this->viewport()->rect();
+
+    // 将屏幕的四个角映射到物理世界 (Scene) 坐标系中
+    QPointF viewTL = this->mapToScene(viewportRect.topLeft());
+    QPointF viewTR = this->mapToScene(viewportRect.topRight());
+    QPointF viewBL = this->mapToScene(viewportRect.bottomLeft());
+    QPointF viewBR = this->mapToScene(viewportRect.bottomRight());
+
+    // ==========================================
+    // 🎯 激光图层 (boundingRect) 的四个角坐标获取
+    // ==========================================
+    // 假设你在 View 中有 m_laserItem 的指针，获取它在全局世界里的结界框
+    // (如果你想看 OccMapItem，替换成 m_occMapItem 即可)
+    QRectF itemRect = m_laserScanItem->sceneBoundingRect();
+
+    QPointF itemTL = itemRect.topLeft();
+    QPointF itemTR = itemRect.topRight();
+    QPointF itemBL = itemRect.bottomLeft();
+    QPointF itemBR = itemRect.bottomRight();
+
+    // ==========================================
+    // 🖨️ 格式化打印输出
+    // ==========================================
+    qDebug() << "================= 坐标四角 Debug =================";
+    qDebug() << "[ 屏幕视角 (View) 在世界中的范围 ]:";
+    qDebug() << "左上角:" << viewTL << " | " << "右上角:" << viewTR;
+    qDebug() << "左下角:" << viewBL << " | " << "右下角:" << viewBR;
+    qDebug() << "--------------------------------------------------";
+    qDebug() << "[ 图层结界 (boundingRect) 的范围 ]:";
+    qDebug() << "左上角:" << itemTL << " | " << "右上角:" << itemTR;
+    qDebug() << "左下角:" << itemBL << " | " << "右下角:" << itemBR;
+    qDebug() << "==================================================\n";
+
     QGraphicsView::wheelEvent(event);
 }
 

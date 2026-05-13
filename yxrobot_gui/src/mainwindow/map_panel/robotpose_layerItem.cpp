@@ -28,7 +28,7 @@ void RobotPoseItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
                      QWidget *widget) {
     painter->setRenderHint(QPainter::Antialiasing, true);  //设置反锯齿 反走样
     painter->save();
-    painter->rotate(rad2deg(-m_currRobotPose.theta));//旋转到机器人坐标-theta
+    painter->rotate(rad2deg(m_currRobotPose.theta));//旋转到机器人坐标theta
     painter->drawPixmap(-m_robotImg.width() / 2, -m_robotImg.height() / 2,
                         m_robotImg);
     painter->restore();
@@ -66,8 +66,8 @@ void RobotPoseItem::updatePose(RobotPose pose)
     m_currRobotPose = pose;
     RobotPose robotScenePose;
     m_map.worldPose2Scene(pose.x,pose.y,robotScenePose.x,robotScenePose.y);
-    std::cout<<"robotScenePose:"<<robotScenePose.x<<","<<robotScenePose.y<<std::endl;
-    std::cout<<"getPose:"<<pose.x<<","<<pose.y<<std::endl;
+    // std::cout<<"robotScenePose:"<<robotScenePose.x<<","<<robotScenePose.y<<std::endl;
+    // std::cout<<"getPose:"<<pose.x<<","<<pose.y<<std::endl;
     setPos(robotScenePose.x, robotScenePose.y);//设置场景坐标系下坐标
     update();
 }

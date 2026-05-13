@@ -18,8 +18,8 @@ public:
     void UpdateLaserData(const LaserScan& scan);
 
 private:
-    void Id2Color(int id, int &R, int &G, int &B);
-    void drawLaser(QPainter *painter, int id, std::vector<Point>);
+    QColor Id2Color(int id);
+    void drawLaser(QPainter *painter, int id, const std::vector<Point>& data);
     void computeBoundRect(const std::map<int, std::vector<Point>> &laser_scan);
 
 private:
